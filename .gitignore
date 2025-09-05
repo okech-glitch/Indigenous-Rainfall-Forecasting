@@ -1,0 +1,36 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+.env
+.venv
+venv/
+ENV/
+
+# Packaging
+.eggs/
+*.egg-info/
+dist/
+build/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.cache/
+
+# Editors/OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Data and results (keep placeholders committed)
+data/*.csv
+results/*.csv
+results/explainability/*
