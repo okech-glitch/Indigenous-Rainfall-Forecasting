@@ -33,6 +33,7 @@ def train_model(train_path: str, output_dir: str) -> None:
         eval_metric="mlogloss",
         tree_method="hist",
         random_state=42,
+        num_class=len(label_encoder.classes_),
     )
 
     pipeline = Pipeline(steps=[("pre", preprocessor), ("clf", model)])
@@ -46,12 +47,19 @@ def train_model(train_path: str, output_dir: str) -> None:
         y_train, y_val = y_enc[train_idx], y_enc[val_idx]
         pipeline.fit(X_train, y_train)
         preds = pipeline.predict(X_val)
-        oof_preds.extend(preds)
-        oof_trues.extend(y_val)
+        # Ensure preds are class indices, not probabilities
+        if hasattr(preds, 'shape') and len(preds.shape) > 1:
+            preds = preds.argmax(axis=1)
+        oof_preds.extend(preds.tolist())
+        oof_trues.extend(y_val.tolist())
 
     f1 = f1_score(oof_trues, oof_preds, average="macro")
     print(f"CV Macro F1: {f1:.4f}")
-    print(classification_report(oof_trues, oof_preds, target_names=label_encoder.classes_))
+    print(
+        classification_report(
+            oof_trues, oof_preds, target_names=label_encoder.classes_
+        )
+    )
 
     pipeline.fit(X, y_enc)
     artifact = {"pipeline": pipeline, "label_encoder": label_encoder}
@@ -66,6 +74,9 @@ def predict_and_submit(predict_path: str, model_path: str, sample_submission: st
 
     feature_cols = [c for c in df_test.columns if c not in [ID_COL]]
     pred_int = pipeline.predict(df_test[feature_cols])
+    # Ensure pred_int are class indices, not probabilities
+    if hasattr(pred_int, 'shape') and len(pred_int.shape) > 1:
+        pred_int = pred_int.argmax(axis=1)
     preds = label_encoder.inverse_transform(pred_int.astype(int))
 
     sub = pd.read_csv(sample_submission)

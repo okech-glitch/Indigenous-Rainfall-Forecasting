@@ -2,7 +2,6 @@ from __future__ import annotations
 import argparse
 import os
 import joblib
-import numpy as np
 import pandas as pd
 from skl2onnx import convert_sklearn
 from skl2onnx.common.data_types import FloatTensorType
