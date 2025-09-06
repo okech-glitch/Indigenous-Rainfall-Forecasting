@@ -15,10 +15,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r Indigenous-Rainfall-Forecasting/requirements.txt
+          pip install -r requirements.txt
       - name: Lint
         run: |
-          flake8 Indigenous-Rainfall-Forecasting/src Indigenous-Rainfall-Forecasting/tests
+          flake8 src tests
       - name: Test
         run: |
-          pytest -q Indigenous-Rainfall-Forecasting/tests
+          pytest -q tests

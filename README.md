@@ -42,6 +42,12 @@ python -m src.export --model_path results/final_model.joblib --onnx_path results
 python -m src.model --predict_path data/test.csv --model_path results/final_model.joblib --submission_path results/submission.csv --sample_submission data/SampleSubmission.csv
 ```
 
+## Performance
+
+- **CV Macro F1 Score**: 0.7528
+- **Model**: XGBoost with preprocessing pipeline
+- **Features**: Indigenous Ecological Indicators (IEIs)
+
 ## CI
 
 GitHub Actions runs flake8 and pytest on push/PR.
