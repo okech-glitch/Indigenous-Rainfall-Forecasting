@@ -6,6 +6,7 @@ import joblib
 from sklearn.metrics import f1_score, classification_report
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
+from sklearn.preprocessing import LabelEncoder
 from xgboost import XGBClassifier
 from .preprocess import build_preprocess_pipeline, TARGET_COL, ID_COL
 
@@ -17,6 +18,10 @@ def train_model(train_path: str, output_dir: str) -> None:
     preprocessor, feature_cols = build_preprocess_pipeline(df)
     X = df[feature_cols]
     y = df[TARGET_COL]
+
+    # Encode string labels to integers for XGBoost
+    label_encoder = LabelEncoder()
+    y_enc = label_encoder.fit_transform(y)
 
     model = XGBClassifier(
         n_estimators=300,
@@ -36,29 +41,32 @@ def train_model(train_path: str, output_dir: str) -> None:
     oof_preds = []
     oof_trues = []
 
-    for train_idx, val_idx in skf.split(X, y):
+    for train_idx, val_idx in skf.split(X, y_enc):
         X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
-        y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+        y_train, y_val = y_enc[train_idx], y_enc[val_idx]
         pipeline.fit(X_train, y_train)
         preds = pipeline.predict(X_val)
-        oof_preds.append(preds)
-        oof_trues.append(y_val.values)
+        oof_preds.extend(preds)
+        oof_trues.extend(y_val)
 
-    oof_preds = pd.Series([p for fold in oof_preds for p in fold])
-    oof_trues = pd.Series([t for fold in oof_trues for t in fold])
     f1 = f1_score(oof_trues, oof_preds, average="macro")
     print(f"CV Macro F1: {f1:.4f}")
-    print(classification_report(oof_trues, oof_preds))
+    print(classification_report(oof_trues, oof_preds, target_names=label_encoder.classes_))
 
-    pipeline.fit(X, y)
-    joblib.dump(pipeline, os.path.join(output_dir, "final_model.joblib"))
+    pipeline.fit(X, y_enc)
+    artifact = {"pipeline": pipeline, "label_encoder": label_encoder}
+    joblib.dump(artifact, os.path.join(output_dir, "final_model.joblib"))
 
 
 def predict_and_submit(predict_path: str, model_path: str, sample_submission: str, submission_path: str) -> None:
     df_test = pd.read_csv(predict_path)
-    pipeline = joblib.load(model_path)
+    artifact = joblib.load(model_path)
+    pipeline = artifact["pipeline"]
+    label_encoder = artifact["label_encoder"]
+
     feature_cols = [c for c in df_test.columns if c not in [ID_COL]]
-    preds = pipeline.predict(df_test[feature_cols])
+    pred_int = pipeline.predict(df_test[feature_cols])
+    preds = label_encoder.inverse_transform(pred_int.astype(int))
 
     sub = pd.read_csv(sample_submission)
     sub["Target"] = preds

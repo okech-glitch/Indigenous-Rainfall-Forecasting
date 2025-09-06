@@ -21,8 +21,9 @@ def build_preprocess_pipeline(df: pd.DataFrame) -> Tuple[Pipeline, List[str]]:
         ("scaler", StandardScaler(with_mean=False)),
     ])
 
+    # Use sparse_output for newer scikit-learn versions
     categorical_transformer = Pipeline(steps=[
-        ("ohe", OneHotEncoder(handle_unknown="ignore", sparse=True)),
+        ("ohe", OneHotEncoder(handle_unknown="ignore", sparse_output=True)),
     ])
 
     preprocessor = ColumnTransformer(
